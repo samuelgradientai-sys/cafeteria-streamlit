@@ -1,16 +1,29 @@
 # Tema visual de la app (Streamlit lo lee automáticamente, también en Streamlit Cloud)
 [theme]
 base = "light"
-primaryColor = "#8a5a33"             # café: botones, sliders, filtros seleccionados
-backgroundColor = "#fbf8f3"          # crema
-secondaryBackgroundColor = "#f2ebe1" # barra lateral y cajas
-textColor = "#2b2118"
-borderColor = "#e4d9cb"
+primaryColor = "#c2410c"             # naranja quemado: botones, sliders, pestañas y filtros elegidos
+backgroundColor = "#fffaf5"          # crema anaranjado
+secondaryBackgroundColor = "#fff1e3" # fondo de cajas y controles
+textColor = "#2d1b0e"                # café oscuro
+linkColor = "#c2410c"
+borderColor = "#f6d4b1"              # bordes durazno
+dataframeBorderColor = "#f6d4b1"
+dataframeHeaderBackgroundColor = "#ffedd5"
 showWidgetBorder = true
 baseRadius = "0.6rem"
 font = "sans-serif"
 headingFont = "serif"
-chartCategoricalColors = ["#2a78d6", "#eb6834", "#1baf7a"]
+# Colores por defecto de las gráficas: primero el naranja
+chartCategoricalColors = ["#eb6834", "#2a78d6", "#1baf7a"]
+# Escala de claro a oscuro (durazno → café quemado) para gráficas de magnitud
+chartSequentialColors = ["#feeade", "#fecdb0", "#ffae7d", "#ff8c3d", "#ed7307",
+                         "#d16301", "#b45401", "#994502", "#7e3702", "#632a02"]
+
+# Barra lateral en durazno, para que se distinga del resto
+[theme.sidebar]
+backgroundColor = "#ffedd5"
+secondaryBackgroundColor = "#fff7ed"
+borderColor = "#f3c9a0"
 
 [browser]
 gatherUsageStats = false

@@ -22,7 +22,7 @@ cafeteria-streamlit/
 ├── ventas_cafeteria.csv    ← datos simulados
 ├── generar_datos.py        ← script que genera el CSV
 ├── requirements.txt        ← librerías para Streamlit Cloud
-├── .streamlit/config.toml  ← tema visual (colores café)
+├── .streamlit/config.toml  ← tema visual (colores naranjas)
 └── paso_1 … paso_5         ← versiones de aprendizaje, de lo simple a lo completo
 ```
 

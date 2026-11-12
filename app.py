@@ -30,10 +30,11 @@ COLORES_CATEGORIA = {
     "Comidas": "#008300",
     "Panadería": "#e87ba4",
 }
-COLOR_ACTUAL = "#2a78d6"
+COLOR_ACTUAL = "#eb6834"  # naranja: el periodo que estás mirando
 COLOR_REFERENCIA = "#bdb5aa"  # gris cálido para "periodo anterior"
-FONDO = "#fbf8f3"  # igual al tema: separa los segmentos de las barras apiladas
-ESCALA_AZUL = ["#cde2fb", "#86b6ef", "#3987e5", "#1c5cab", "#0d366b"]
+FONDO = "#fffaf5"  # igual al tema: separa los segmentos de las barras apiladas
+ESCALA_NARANJA = ["#ffd6be", "#ff924a", "#d16300", "#944302", "#5b2602"]  # claro → oscuro
+DEGRADADO_ENCABEZADO = "linear-gradient(115deg, #c84a0f 0%, #b93f0b 55%, #9a3412 100%)"
 SIN_BARRA = {"displayModeBar": False}
 
 DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
@@ -175,8 +176,24 @@ def estilo(fig: go.Figure, alto: int = 340) -> go.Figure:
         hoverlabel=dict(font_size=13),
     )
     fig.update_xaxes(showgrid=False, title_text="")
-    fig.update_yaxes(gridcolor="rgba(43,33,24,0.08)", zeroline=False, title_text="")
+    fig.update_yaxes(gridcolor="rgba(45,27,14,0.08)", zeroline=False, title_text="")
     return fig
+
+
+def encabezado(titulo: str, detalle: str):
+    """Franja naranja con el título. Es HTML, por eso lleva unsafe_allow_html=True."""
+    st.markdown(
+        f"""
+        <div style="background:{DEGRADADO_ENCABEZADO}; color:#ffffff; border-radius:0.9rem;
+                    padding:1.3rem 1.6rem; margin-bottom:0.4rem;">
+          <div style="font-size:0.8rem; font-weight:600; letter-spacing:0.08em;
+                      text-transform:uppercase;">☕ Café Analítica</div>
+          <div style="font-family:serif; font-size:2.2rem; font-weight:700; line-height:1.2;">{titulo}</div>
+          <div style="font-size:0.95rem; margin-top:0.35rem;">{detalle}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def tarjeta(titulo: str, subtitulo: str | None = None):
@@ -242,13 +259,12 @@ if actual.empty:
 # ════════════════════════════════════════════════════════════════════════════
 # 5. ENCABEZADO E INDICADORES
 # ════════════════════════════════════════════════════════════════════════════
-st.title("Dashboard de ventas")
 comparacion_txt = (
     f"comparado con {fecha_txt(inicio_ant)} – {fecha_txt(fin_ant)}"
     if hay_comparacion
     else "sin periodo anterior para comparar"
 )
-st.caption(f"**{fecha_txt(inicio)} – {fecha_txt(fin)}** · {comparacion_txt}")
+encabezado("Dashboard de ventas", f"<b>{fecha_txt(inicio)} – {fecha_txt(fin)}</b> · {comparacion_txt}")
 
 
 def delta_txt(v_actual, v_anterior):
@@ -462,7 +478,17 @@ with tab_sedes:
             diario_sede = actual.groupby(["fecha", "dia_semana", "sede"], observed=True)["ingresos"].sum().reset_index()
             matriz = (diario_sede.groupby(["sede", "dia_semana"], observed=True)["ingresos"].mean()
                       .unstack("dia_semana") / 1e6)
-            fig = px.imshow(matriz, text_auto=".2f", aspect="auto", color_continuous_scale=ESCALA_AZUL)
+            fig = px.imshow(matriz, aspect="auto", color_continuous_scale=ESCALA_NARANJA)
+            # Número de cada celda: blanco sobre las oscuras y café sobre las claras, para que siempre se lea
+            minimo, maximo = np.nanmin(matriz.values), np.nanmax(matriz.values)
+            for sede in matriz.index:
+                for dia in matriz.columns:
+                    valor = matriz.loc[sede, dia]
+                    if pd.isna(valor):
+                        continue
+                    oscura = (valor - minimo) / ((maximo - minimo) or 1) > 0.45
+                    fig.add_annotation(x=dia, y=sede, text=f"{valor:.2f}".replace(".", ","), showarrow=False,
+                                       font=dict(size=13, color="#ffffff" if oscura else "#2d1b0e"))
             fig.update_traces(hovertemplate="%{y} · %{x}: $ %{z:.2f} M<extra></extra>")
             fig.update_layout(coloraxis_colorbar=dict(title="M$", thickness=12))
             st.plotly_chart(estilo(fig, 300), config=SIN_BARRA)
