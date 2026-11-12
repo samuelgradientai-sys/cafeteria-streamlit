@@ -30,11 +30,11 @@ COLORES_CATEGORIA = {
     "Comidas": "#008300",
     "Panadería": "#e87ba4",
 }
-COLOR_ACTUAL = "#eb6834"  # naranja: el periodo que estás mirando
-COLOR_REFERENCIA = "#bdb5aa"  # gris cálido para "periodo anterior"
-FONDO = "#fffaf5"  # igual al tema: separa los segmentos de las barras apiladas
-ESCALA_NARANJA = ["#ffd6be", "#ff924a", "#d16300", "#944302", "#5b2602"]  # claro → oscuro
-DEGRADADO_ENCABEZADO = "linear-gradient(115deg, #c84a0f 0%, #b93f0b 55%, #9a3412 100%)"
+COLOR_ACTUAL = "#2a78d6"  # azul: el periodo que estás mirando
+COLOR_REFERENCIA = "#b4bccb"  # gris frío para "periodo anterior"
+FONDO = "#f5f9ff"  # igual al tema: separa los segmentos de las barras apiladas
+ESCALA_AZUL = ["#d3e4fb", "#7fb0ee", "#2f73d6", "#1a4d9c", "#0d2a57"]  # claro → oscuro
+DEGRADADO_ENCABEZADO = "linear-gradient(115deg, #1d4ed8 0%, #1e40af 55%, #1e3a8a 100%)"
 SIN_BARRA = {"displayModeBar": False}
 
 DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
@@ -176,12 +176,12 @@ def estilo(fig: go.Figure, alto: int = 340) -> go.Figure:
         hoverlabel=dict(font_size=13),
     )
     fig.update_xaxes(showgrid=False, title_text="")
-    fig.update_yaxes(gridcolor="rgba(45,27,14,0.08)", zeroline=False, title_text="")
+    fig.update_yaxes(gridcolor="rgba(15,30,51,0.08)", zeroline=False, title_text="")
     return fig
 
 
 def encabezado(titulo: str, detalle: str):
-    """Franja naranja con el título. Es HTML, por eso lleva unsafe_allow_html=True."""
+    """Franja azul con el título. Es HTML, por eso lleva unsafe_allow_html=True."""
     st.markdown(
         f"""
         <div style="background:{DEGRADADO_ENCABEZADO}; color:#ffffff; border-radius:0.9rem;
@@ -478,8 +478,8 @@ with tab_sedes:
             diario_sede = actual.groupby(["fecha", "dia_semana", "sede"], observed=True)["ingresos"].sum().reset_index()
             matriz = (diario_sede.groupby(["sede", "dia_semana"], observed=True)["ingresos"].mean()
                       .unstack("dia_semana") / 1e6)
-            fig = px.imshow(matriz, aspect="auto", color_continuous_scale=ESCALA_NARANJA)
-            # Número de cada celda: blanco sobre las oscuras y café sobre las claras, para que siempre se lea
+            fig = px.imshow(matriz, aspect="auto", color_continuous_scale=ESCALA_AZUL)
+            # Número de cada celda: blanco sobre las oscuras y azul marino sobre las claras, para que siempre se lea
             minimo, maximo = np.nanmin(matriz.values), np.nanmax(matriz.values)
             for sede in matriz.index:
                 for dia in matriz.columns:
@@ -488,7 +488,7 @@ with tab_sedes:
                         continue
                     oscura = (valor - minimo) / ((maximo - minimo) or 1) > 0.45
                     fig.add_annotation(x=dia, y=sede, text=f"{valor:.2f}".replace(".", ","), showarrow=False,
-                                       font=dict(size=13, color="#ffffff" if oscura else "#2d1b0e"))
+                                       font=dict(size=13, color="#ffffff" if oscura else "#0f1e33"))
             fig.update_traces(hovertemplate="%{y} · %{x}: $ %{z:.2f} M<extra></extra>")
             fig.update_layout(coloraxis_colorbar=dict(title="M$", thickness=12))
             st.plotly_chart(estilo(fig, 300), config=SIN_BARRA)
