@@ -1,0 +1,16 @@
+# Tema visual de la app (Streamlit lo lee automáticamente, también en Streamlit Cloud)
+[theme]
+base = "light"
+primaryColor = "#8a5a33"             # café: botones, sliders, filtros seleccionados
+backgroundColor = "#fbf8f3"          # crema
+secondaryBackgroundColor = "#f2ebe1" # barra lateral y cajas
+textColor = "#2b2118"
+borderColor = "#e4d9cb"
+showWidgetBorder = true
+baseRadius = "0.6rem"
+font = "sans-serif"
+headingFont = "serif"
+chartCategoricalColors = ["#2a78d6", "#eb6834", "#1baf7a"]
+
+[browser]
+gatherUsageStats = false
