@@ -7,6 +7,7 @@ Orden del archivo (s2a, sección 13.1):
   1 configuración · 2 funciones · 3 datos · 4 filtros · 5 indicadores
   6 pestañas con gráficas · 7 tablas y descarga
 """
+from itertools import count
 from pathlib import Path
 
 import numpy as np
@@ -32,7 +33,7 @@ COLORES_CATEGORIA = {
 }
 COLOR_ACTUAL = "#2a78d6"  # azul: el periodo que estás mirando
 COLOR_REFERENCIA = "#b4bccb"  # gris frío para "periodo anterior"
-FONDO = "#f5f9ff"  # igual al tema: separa los segmentos de las barras apiladas
+FONDO = "#ffffff"  # igual al fondo de las tarjetas: separa los segmentos de las barras apiladas
 ESCALA_AZUL = ["#d3e4fb", "#7fb0ee", "#2f73d6", "#1a4d9c", "#0d2a57"]  # claro → oscuro
 DEGRADADO_ENCABEZADO = "linear-gradient(115deg, #1d4ed8 0%, #1e40af 55%, #1e3a8a 100%)"
 SIN_BARRA = {"displayModeBar": False}
@@ -123,23 +124,41 @@ def promedio_diario_semanal(d: pd.DataFrame, columna="ingresos", por=None) -> pd
     return diario.groupby([semana] + ([por] if por else []))[columna].mean().reset_index()
 
 
+def fechas_es(fig: go.Figure, fechas, max_marcas: int = 8) -> go.Figure:
+    """Pone las fechas del eje X en español (Plotly las escribe en inglés: «Apr 5»)."""
+    fechas = pd.Series(pd.to_datetime(pd.Series(fechas).unique())).sort_values()
+    marcas = fechas.iloc[:: max(1, -(-len(fechas) // max_marcas))]
+    fig.update_xaxes(tickvals=marcas, ticktext=[f"{d.day} {MESES[d.month - 1]}" for d in marcas],
+                     hoverformat="%d/%m/%Y")
+    return fig
+
+
+def tabla_es(d: pd.DataFrame, pesos_cols=(), enteros_cols=(), pct_cols=()):
+    """Formato colombiano en las tablas ($ 50.358.000 y 14,8 %) sin perder el orden numérico."""
+    formatos = {c: (lambda v: "" if pd.isna(v) else pesos(v)) for c in pesos_cols}
+    formatos |= {c: (lambda v: "" if pd.isna(v) else entero(v)) for c in enteros_cols}
+    formatos |= {c: (lambda v: "" if pd.isna(v) else f"{v:+.1f} %".replace(".", ",")) for c in pct_cols}
+    return d.style.format(formatos)
+
+
 def chispa(valores) -> list | None:
     """Datos para la mini gráfica de st.metric (necesita al menos 2 puntos)."""
     valores = [float(v) for v in valores if pd.notna(v)]
     return valores if len(valores) >= 2 else None
 
 
-def generar_hallazgos(actual: pd.DataFrame, anterior: pd.DataFrame | None) -> list[str]:
+def generar_hallazgos(actual: pd.DataFrame, anterior: pd.DataFrame | None) -> list[tuple[str, str]]:
+    """Devuelve (ícono, texto). El ícono es un nombre de Material Symbols."""
     ideas = []
 
     sedes = actual.groupby("sede")["ingresos"].sum().sort_values(ascending=False)
     if len(sedes) > 1:
-        ideas.append(
+        ideas.append(("storefront",
             f"**{sedes.index[0]}** lidera con el **{pct(sedes.iloc[0] / sedes.sum(), False)}** de los ingresos."
-        )
+        ))
 
     productos = actual.groupby("producto")["ingresos"].sum()
-    ideas.append(f"**{productos.idxmax()}** es el producto que más factura: **{millones(productos.max())}**.")
+    ideas.append(("star", f"**{productos.idxmax()}** es el producto que más factura: **{millones(productos.max())}**."))
 
     por_dia = (
         actual.groupby(["fecha", "dia_semana"], observed=True)["ingresos"].sum()
@@ -148,10 +167,10 @@ def generar_hallazgos(actual: pd.DataFrame, anterior: pd.DataFrame | None) -> li
     if len(por_dia) > 1:
         mejor, peor = por_dia.idxmax(), por_dia.idxmin()
         brecha = 1 - por_dia[peor] / por_dia[mejor]
-        ideas.append(
+        ideas.append(("calendar_month",
             f"El mejor día es el **{DIAS_LARGOS[mejor]}**; el **{DIAS_LARGOS[peor]}** vende "
             f"**{pct(brecha, False)} menos**."
-        )
+        ))
 
     if anterior is not None and not anterior.empty:
         act = actual.groupby("producto")["ingresos"].sum()
@@ -161,7 +180,7 @@ def generar_hallazgos(actual: pd.DataFrame, anterior: pd.DataFrame | None) -> li
             texto = f"**{var.idxmax()}** es el que más creció (**{pct(var.max())}**)"
             if var.min() < 0:
                 texto += f" y **{var.idxmin()}** el que más cayó (**{pct(var.min())}**)"
-            ideas.append(texto + " frente al periodo anterior.")
+            ideas.append(("trending_up", texto + " frente al periodo anterior."))
     return ideas
 
 
@@ -174,6 +193,8 @@ def estilo(fig: go.Figure, alto: int = 340) -> go.Figure:
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0, title_text=""),
         barcornerradius=4,
         hoverlabel=dict(font_size=13),
+        paper_bgcolor="rgba(0,0,0,0)",  # transparente: toma el blanco de la tarjeta
+        plot_bgcolor="rgba(0,0,0,0)",
     )
     fig.update_xaxes(showgrid=False, title_text="")
     fig.update_yaxes(gridcolor="rgba(15,30,51,0.08)", zeroline=False, title_text="")
@@ -185,7 +206,8 @@ def encabezado(titulo: str, detalle: str):
     st.markdown(
         f"""
         <div style="background:{DEGRADADO_ENCABEZADO}; color:#ffffff; border-radius:0.9rem;
-                    padding:1.3rem 1.6rem; margin-bottom:0.4rem;">
+                    padding:1.3rem 1.6rem; margin-bottom:0.6rem;
+                    box-shadow:0 8px 24px rgba(29,78,216,0.22);">
           <div style="font-size:0.8rem; font-weight:600; letter-spacing:0.08em;
                       text-transform:uppercase;">☕ Café Analítica</div>
           <div style="font-family:serif; font-size:2.2rem; font-weight:700; line-height:1.2;">{titulo}</div>
@@ -196,14 +218,43 @@ def encabezado(titulo: str, detalle: str):
     )
 
 
-def tarjeta(titulo: str, subtitulo: str | None = None):
-    """Caja con borde y título; se usa con `with tarjeta(...):`."""
-    caja = st.container(border=True)
+_numero_tarjeta = count()  # se reinicia en cada ejecución del script, así las claves no chocan
+
+
+def tarjeta(titulo: str, subtitulo: str | None = None, estirar: bool = True):
+    """Caja blanca con borde y título; se usa con `with tarjeta(...):`.
+    La clave «card-…» le da la clase CSS que la pinta de blanco (ver CSS más abajo).
+    estirar=True iguala la altura con las tarjetas vecinas de la misma fila."""
+    caja = st.container(border=True, key=f"card-{next(_numero_tarjeta)}",
+                        height="stretch" if estirar else "content")
     caja.markdown(f"**{titulo}**")
     if subtitulo:
         caja.caption(subtitulo)
     return caja
 
+
+# Ajustes visuales que el tema (config.toml) no permite: tarjetas blancas con sombra suave
+# y pestañas más grandes. Las clases st-key-… salen del parámetro key de cada contenedor.
+CSS = """
+<style>
+[class*="st-key-card"],
+.st-key-kpis [data-testid="stMetric"],
+.st-key-top3 [data-testid="stMetric"],
+.st-key-sim [data-testid="stMetric"] {
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgba(15, 30, 51, 0.04), 0 6px 18px rgba(29, 78, 216, 0.07);
+}
+[data-testid="stMetricChart"] svg { background-color: transparent !important; }
+[data-testid="stTab"] [data-testid="stMarkdownContainer"] p {
+    font-size: 1rem;
+    font-weight: 600;
+}
+[data-testid="stTabs"] [role="tablist"] { gap: 1.4rem; margin-top: 0.6rem; }
+</style>
+"""
+
+
+st.html(CSS)  # solo trae <style>: no ocupa espacio en la página
 
 # ════════════════════════════════════════════════════════════════════════════
 # 3. DATOS
@@ -288,7 +339,7 @@ estrella_ant = (
 diario = actual.groupby("fecha")[["ingresos", "cantidad"]].sum()
 semanal = diario.resample("W-MON", label="left", closed="left").mean()
 
-k1, k2, k3, k4 = st.columns(4)
+k1, k2, k3, k4 = st.container(key="kpis").columns(4)
 k1.metric(
     "Ingresos", millones(ingresos), delta=delta_txt(ingresos, ing_ant), border=True,
     chart_data=chispa(semanal["ingresos"]), chart_type="area",
@@ -305,7 +356,10 @@ k3.metric(
 )
 k4.metric(
     "Producto estrella", estrella, delta=delta_txt(por_producto[estrella], estrella_ant), border=True,
-    help=f"El que más ingresos generó: {pesos(por_producto[estrella])}.",
+    chart_data=chispa(promedio_diario_semanal(actual[actual["producto"] == estrella])["ingresos"]),
+    chart_type="area",
+    help=f"El que más ingresos generó: {pesos(por_producto[estrella])}. "
+         "La mini gráfica es su ingreso diario promedio de cada semana.",
 )
 
 # ════════════════════════════════════════════════════════════════════════════
@@ -338,12 +392,13 @@ with tab_resumen:
                               hovertemplate="%{fullData.name}: $ %{y:,.0f}<extra></extra>")
             fig.update_layout(hovermode="x unified")
             fig.update_yaxes(tickprefix="$ ", tickformat="~s")
+            fechas_es(fig, serie["fecha"])
             st.plotly_chart(estilo(fig, 330), config=SIN_BARRA)
 
     with der:
         with tarjeta("Lo que dicen los datos", "Hallazgos calculados automáticamente."):
-            for idea in generar_hallazgos(actual, anterior if hay_comparacion else None):
-                st.markdown(f"- {idea}")
+            for icono, idea in generar_hallazgos(actual, anterior if hay_comparacion else None):
+                st.markdown(f":blue[:material/{icono}:]&nbsp; {idea}")
 
     izq, der = st.columns(2)
 
@@ -415,29 +470,31 @@ with tab_productos:
             fig.update_layout(bargap=0.3)
             fig.update_yaxes(categoryorder="total ascending")
             fig.update_xaxes(tickprefix="$ ", tickformat="~s")
-            st.plotly_chart(estilo(fig, 420), config=SIN_BARRA)
+            st.plotly_chart(estilo(fig, 590), config=SIN_BARRA)  # alto parecido a la columna del Top 3
     with der:
-        st.markdown("**Top 3**")
+        top3 = st.container(key="top3")
+        top3.markdown("**:material/emoji_events: Top 3**")
         for fila in resumen.head(3).itertuples():
             delta = f"{pct(fila.variacion / 100)} vs anterior" if hay_comparacion and pd.notna(fila.variacion) else None
-            st.metric(fila.producto, millones(fila.ingresos), delta=delta, border=True,
-                      chart_data=chispa(fila.tendencia or []), chart_type="area")
+            top3.metric(fila.producto, millones(fila.ingresos), delta=delta, border=True,
+                        chart_data=chispa(fila.tendencia or []), chart_type="area")
 
     columnas = ["producto", "categoria", "precio", "unidades", "ingresos", "participacion"]
     columnas += (["variacion"] if hay_comparacion else []) + ["tendencia"]
     st.dataframe(
-        resumen[columnas],
+        tabla_es(resumen[columnas], pesos_cols=["precio", "ingresos"], enteros_cols=["unidades"],
+                 pct_cols=["variacion"] if hay_comparacion else []),
         hide_index=True,
         column_config={
             "producto": "Producto",
             "categoria": "Categoría",
-            "precio": st.column_config.NumberColumn("Precio", format="$ %d"),
-            "unidades": st.column_config.NumberColumn("Unidades", format="%d"),
-            "ingresos": st.column_config.NumberColumn("Ingresos", format="$ %d"),
+            "precio": st.column_config.NumberColumn("Precio"),
+            "unidades": st.column_config.NumberColumn("Unidades"),
+            "ingresos": st.column_config.NumberColumn("Ingresos"),
             "participacion": st.column_config.ProgressColumn(
                 "Participación", format="%.1f %%", min_value=0, max_value=float(resumen["participacion"].max())
             ),
-            "variacion": st.column_config.NumberColumn("Var. vs anterior", format="%+.1f %%"),
+            "variacion": st.column_config.NumberColumn("Var. vs anterior"),
             "tendencia": st.column_config.LineChartColumn("Tendencia semanal", y_min=0),
         },
     )
@@ -455,7 +512,7 @@ with tab_sedes:
         top = d.groupby("producto")["ingresos"].sum().idxmax()
         dia = (d.groupby(["fecha", "dia_semana"], observed=True)["ingresos"].sum()
                .groupby(level="dia_semana", observed=True).mean().idxmax())
-        with col.container(border=True):
+        with col.container(border=True, key=f"card-sede-{sede}"):
             st.markdown(
                 f"<span style='color:{COLORES_SEDE[sede]};font-size:1.3rem'>●</span> "
                 f"<span style='font-size:1.15rem;font-weight:600'>{sede}</span>",
@@ -529,10 +586,12 @@ with tab_simulador:
     ing_sim = sim["ingresos_sim"].sum()
     uni_sim = sim["cantidad_sim"].sum()
 
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Ingresos actuales", millones(ingresos), border=True)
-    m2.metric("Ingresos simulados", millones(ing_sim), delta=pct(ing_sim / ingresos - 1), border=True)
-    m3.metric("Unidades simuladas", entero(uni_sim), delta=pct(uni_sim / unidades - 1), border=True)
+    m1, m2, m3 = st.container(key="sim").columns(3)
+    m1.metric("Ingresos actuales", millones(ingresos), border=True, height="stretch")
+    m2.metric("Ingresos simulados", millones(ing_sim), delta=pct(ing_sim / ingresos - 1), border=True,
+              height="stretch")
+    m3.metric("Unidades simuladas", entero(uni_sim), delta=pct(uni_sim / unidades - 1), border=True,
+              height="stretch")
 
     izq, der = st.columns([3, 2])
     with izq:
@@ -569,16 +628,17 @@ with tab_datos:
     columnas = ["fecha", "sede", "producto", "categoria", "precio_unitario", "cantidad", "ingresos"]
     st.caption(f"{entero(len(actual))} filas con los filtros actuales.")
     st.dataframe(
-        actual[columnas].sort_values(["fecha", "sede"]),
+        tabla_es(actual[columnas].sort_values(["fecha", "sede"]),
+                 pesos_cols=["precio_unitario", "ingresos"], enteros_cols=["cantidad"]),
         hide_index=True,
         column_config={
             "fecha": st.column_config.DateColumn("Fecha", format="DD/MM/YYYY"),
             "sede": "Sede",
             "producto": "Producto",
             "categoria": "Categoría",
-            "precio_unitario": st.column_config.NumberColumn("Precio", format="$ %d"),
-            "cantidad": st.column_config.NumberColumn("Unidades", format="%d"),
-            "ingresos": st.column_config.NumberColumn("Ingresos", format="$ %d"),
+            "precio_unitario": st.column_config.NumberColumn("Precio"),
+            "cantidad": st.column_config.NumberColumn("Unidades"),
+            "ingresos": st.column_config.NumberColumn("Ingresos"),
         },
     )
     st.download_button(

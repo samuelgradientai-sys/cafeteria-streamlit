@@ -27,3 +27,7 @@ borderColor = "#b9d3f3"
 
 [browser]
 gatherUsageStats = false
+
+# Oculta el botón «Deploy» y las opciones de desarrollador de la barra superior
+[client]
+toolbarMode = "viewer"
