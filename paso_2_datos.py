@@ -1,6 +1,6 @@
 """PASO 2 · Cargar datos con caché y mostrarlos.
 
-Ejecutar:  ..\\.venv\\Scripts\\python.exe -m streamlit run paso_2_datos.py
+Ejecutar:  python -m streamlit run paso_2_datos.py
 """
 from pathlib import Path
 

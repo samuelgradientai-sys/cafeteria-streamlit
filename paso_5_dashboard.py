@@ -1,6 +1,6 @@
 """PASO 5 · Dashboard completo: pestañas, estado de sesión, formularios y descarga.
 
-Ejecutar:  ..\\.venv\\Scripts\\python.exe -m streamlit run paso_5_dashboard.py
+Ejecutar:  python -m streamlit run paso_5_dashboard.py
 
 Sigue el orden recomendado en la clase (s2a, sección 13.1):
   1 importar · 2 configurar · 3 funciones · 4 cargar · 5 filtros
@@ -29,7 +29,7 @@ def cargar_datos(ruta: Path) -> pd.DataFrame:
     df = pd.read_csv(ruta, parse_dates=["fecha"])
     df["mes"] = df["fecha"].dt.to_period("M").astype(str)
     df["dia_semana"] = pd.Categorical(
-        df["fecha"].dt.dayofweek.map(dict(enumerate(DIAS))), categories=DIAS, ordered=True
+        df["fecha"].dt.day_of_week.map(dict(enumerate(DIAS))), categories=DIAS, ordered=True
     )
     return df
 

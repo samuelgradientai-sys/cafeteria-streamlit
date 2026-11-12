@@ -1,6 +1,6 @@
 """PASO 4 · KPIs en columnas y gráficas con Plotly.
 
-Ejecutar:  ..\\.venv\\Scripts\\python.exe -m streamlit run paso_4_graficas.py
+Ejecutar:  python -m streamlit run paso_4_graficas.py
 """
 from pathlib import Path
 

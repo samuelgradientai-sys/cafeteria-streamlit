@@ -1,6 +1,6 @@
 """PASO 3 · Filtros en la barra lateral.
 
-Ejecutar:  ..\\.venv\\Scripts\\python.exe -m streamlit run paso_3_filtros.py
+Ejecutar:  python -m streamlit run paso_3_filtros.py
 """
 from pathlib import Path
 

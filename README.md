@@ -1,67 +1,64 @@
-# Práctica Streamlit · Dashboard de una cafetería
+# ☕ Cafetería · Dashboard de ventas
 
-Cinco pasos, cada uno es una app completa que agrega algo nuevo al anterior.
-Lo nuevo de cada archivo está marcado con `# NUEVO` en los comentarios.
+Dashboard interactivo en **Streamlit** sobre las ventas de una cafetería con 3 sedes (Centro, Norte y Universidad), de enero a junio de 2026.
 
-## Cómo ejecutar
+**App publicada:** _(pega aquí el enlace de Streamlit Cloud)_
 
-En PowerShell, desde la carpeta `ANALAITICA`:
+## Qué incluye
+
+- **Periodo con comparación automática:** último mes, últimos 3 meses, todo o un rango personalizado. Cada indicador se compara con el periodo anterior de igual duración.
+- **Indicadores** con variación y mini gráfica de tendencia: ingresos, unidades, precio promedio y producto estrella.
+- **Resumen:** evolución por sede, hallazgos automáticos, mix de categorías por mes e ingresos por categoría frente al periodo anterior.
+- **Productos:** ranking, top 3 y tabla con participación, variación y tendencia semanal.
+- **Sedes:** ficha de cada sede, mapa de calor por día de la semana y mix de categorías.
+- **Simulador de precios:** ¿qué pasa con los ingresos si subo o bajo precios?
+- **Datos:** tabla filtrada y descarga en CSV.
+
+## Estructura
+
+```
+cafeteria-streamlit/
+├── app.py                  ← la app principal (la que se despliega)
+├── ventas_cafeteria.csv    ← datos simulados
+├── generar_datos.py        ← script que genera el CSV
+├── requirements.txt        ← librerías para Streamlit Cloud
+├── .streamlit/config.toml  ← tema visual (colores café)
+└── paso_1 … paso_5         ← versiones de aprendizaje, de lo simple a lo completo
+```
+
+## Ejecución local
 
 ```powershell
-cd PRACTICA_STREAMLIT
-..\.venv\Scripts\python.exe -m streamlit run paso_1_hola.py
+pip install -r requirements.txt
+streamlit run app.py
 ```
 
-Se abre en `http://localhost:8501`. Para pasar al siguiente: `Ctrl + C` y cambia el nombre del archivo.
+Abre `http://localhost:8501`.
 
-Mientras la app está abierta, edita el `.py`, guarda y presiona **Rerun** (o elige **Always rerun**).
+## Ruta de aprendizaje
 
-Los datos (`ventas_cafeteria.csv`) son simulados. Para regenerarlos:
-`..\.venv\Scripts\python.exe generar_datos.py`
+Los archivos `paso_*.py` construyen el dashboard poco a poco. Lo nuevo de cada uno está marcado con `# NUEVO`.
 
-## Los pasos
+| Paso | Qué se aprende |
+|---|---|
+| `paso_1_hola.py` | Texto, widgets y el ciclo de ejecución |
+| `paso_2_datos.py` | `@st.cache_data`, `st.dataframe`, `st.metric`, `st.expander` |
+| `paso_3_filtros.py` | Barra lateral, filtros y `st.stop()` |
+| `paso_4_graficas.py` | `st.columns` y gráficas con Plotly |
+| `paso_5_dashboard.py` | Pestañas, `column_config`, descarga, `st.session_state` y `st.form` |
+| `app.py` | Todo junto, más comparación de periodos, tarjetas, hallazgos y simulador |
 
-| Paso | Archivo | Qué aprendes |
-|---|---|---|
-| 1 | `paso_1_hola.py` | `st.title`, `st.write`, widgets (`text_input`, `slider`, `radio`) y **el ciclo de ejecución** |
-| 2 | `paso_2_datos.py` | `@st.cache_data`, `st.dataframe`, `st.metric`, `st.expander` |
-| 3 | `paso_3_filtros.py` | `st.sidebar`, `multiselect`, `date_input`, filtrar con pandas, `st.stop()` |
-| 4 | `paso_4_graficas.py` | `st.columns`, Plotly (`px.line`, `px.bar`), colores fijos por sede |
-| 5 | `paso_5_dashboard.py` | `st.tabs`, `column_config`, `download_button`, `st.session_state`, `st.form` |
+### Retos
 
-## Retos (hazlos tú, sin mirar la solución)
+1. **Paso 1:** agrega un `st.number_input` de presupuesto diario y muestra el gasto mensual.
+2. **Paso 2:** quita `@st.cache_data`, agrega `time.sleep(2)` en la carga y nota la diferencia.
+3. **Paso 3:** agrega un filtro por producto que dependa de las categorías elegidas.
+4. **Paso 4:** agrega una gráfica de unidades por categoría.
+5. **Paso 5:** agrega una pestaña para comparar dos sedes lado a lado.
 
-**Paso 1**
-- Agrega un `st.number_input` para el presupuesto diario en café y muestra cuánto gasta al mes (`presupuesto * 30`).
-- Agrega un `st.checkbox("Mostrar secreto")` que, si está marcado, muestre un `st.balloons()`.
+## Datos
 
-**Paso 2**
-- Agrega un segundo `st.metric` con las **unidades vendidas** (`df["cantidad"].sum()`).
-- Quita el `@st.cache_data`, agrega `import time` y `time.sleep(2)` dentro de `cargar_datos`, y abre/cierra un expander. Después vuelve a poner el caché. ¿Notas la diferencia?
+`ventas_cafeteria.csv` es **simulado** (semilla fija), con fines académicos. Para regenerarlo: `python generar_datos.py`.
 
-**Paso 3**
-- Agrega un filtro por **producto** (`multiselect`) que solo muestre los productos de las categorías elegidas.
-- Agrega un `st.slider` de "cantidad mínima" y filtra las filas con `cantidad >=` ese valor.
-
-**Paso 4**
-- Agrega una gráfica de **unidades vendidas por categoría** (`px.bar`).
-- Cambia la línea semanal a mensual (`freq="MS"`). ¿Cuál se lee mejor?
-
-**Paso 5**
-- Agrega una pestaña **"Comparar sedes"** con un `st.selectbox` para elegir dos sedes y muestra sus ingresos lado a lado con `st.columns(2)`.
-- En la bitácora, guarda junto a cada hallazgo la hora (`datetime.now()`) y muéstrala.
-
-**Reto final:** haz tu propio dashboard con `CLASE_2/produccion_planta.csv` siguiendo la estructura del paso 5, sin copiar y pegar.
-
-## Chuleta rápida
-
-```python
-st.set_page_config(layout="wide")        # siempre primero
-x = st.selectbox("Etiqueta", opciones)    # los widgets devuelven el valor elegido
-with st.sidebar: ...                      # barra lateral
-a, b = st.columns(2)                      # columnas
-t1, t2 = st.tabs(["Uno", "Dos"])          # pestañas
-@st.cache_data                            # cachear carga de datos
-st.session_state["clave"] = valor         # guardar algo entre repeticiones
-st.stop()                                 # cortar la ejecución
-```
+---
+Maestría en Analítica Aplicada · Visualización e Inteligencia de Negocios

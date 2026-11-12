@@ -1,7 +1,7 @@
 """Genera ventas_cafeteria.csv con datos simulados (no es Streamlit, es solo pandas).
 
 Ejecutar una sola vez:
-    ..\\.venv\\Scripts\\python.exe generar_datos.py
+    python generar_datos.py
 """
 from pathlib import Path
 
@@ -37,7 +37,7 @@ fechas = pd.date_range("2026-01-01", "2026-06-30", freq="D")
 
 filas = []
 for fecha in fechas:
-    es_fin_de_semana = fecha.dayofweek >= 5
+    es_fin_de_semana = fecha.day_of_week >= 5
     tendencia = 1 + 0.002 * (fecha - fechas[0]).days  # el negocio crece poco a poco
     calor = 1 + 0.3 * np.sin((fecha.month - 1) / 12 * 2 * np.pi)  # más bebidas frías a mitad de año
     for sede, cfg in sedes.items():

@@ -1,6 +1,6 @@
 """PASO 1 · Lo mínimo: texto, widgets y el ciclo de ejecución.
 
-Ejecutar:  ..\\.venv\\Scripts\\python.exe -m streamlit run paso_1_hola.py
+Ejecutar:  python -m streamlit run paso_1_hola.py
 """
 from datetime import datetime
 
